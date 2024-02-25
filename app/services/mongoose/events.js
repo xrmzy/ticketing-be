@@ -5,8 +5,8 @@ const { checkingImage } = require('./images')
 const { checkingTalents } = require('./talents')
 
 const getAllEvents = async (req) => {
-  const { keyword, category, talent } = req.query
-  let condition = {}
+  const { keyword, category, talent, status } = req.query
+  let condition = { organizer: req.user.organizer }
 
   if (keyword) {
     condition = { ...condition, title: { $regex: keyword, $option: 'i' } }
@@ -19,15 +19,23 @@ const getAllEvents = async (req) => {
     condition = { ...condition, talent }
   }
 
+  if (['Draft', 'Published'].includes(status)) {
+    condition = {
+      ...condition,
+      statusEvent: status
+    }
+  }
+
   const result = await Events.find(condition)
+    .populate({ path: 'image', select: '_id name' })
     .populate({
-      path: 'image',
+      path: 'category',
       select: '_id name'
     })
     .populate({
-      path: 'category',
+      path: 'talent',
       select: '_id name role image',
-      populate: { path: 'image', select: '_id name' }
+      populate: { path: 'image', select: '_id  name' }
     })
 
   return result
@@ -67,7 +75,8 @@ const createEvents = async (req) => {
     tickets,
     image,
     category,
-    talent
+    talent,
+    organizer: req.user.organizer
   })
 
   return result
@@ -75,7 +84,7 @@ const createEvents = async (req) => {
 
 const getOneEvents = async (req) => {
   const { id } = req.params
-  const result = await Events.findOne({ _id: id })
+  const result = await Events.findOne({ _id: id, organizer: req.user.organizer })
     .populate({
       path: 'category',
       select: '_id name'
@@ -83,7 +92,7 @@ const getOneEvents = async (req) => {
     .populate({
       path: 'talent',
       select: '_id name role image',
-      populate: { path: 'iamge', select: '_id name' }
+      populate: { path: 'image', select: '_id name' }
     })
 
   if (!result) throw new NotFoundError(`Talents not found with id : ${id}`)
@@ -112,6 +121,7 @@ const updateEvents = async (req) => {
 
   const check = await Events.findOne({
     title,
+    organizer: req.user.organizer,
     _id: { $ne: id }
   })
 
@@ -130,7 +140,8 @@ const updateEvents = async (req) => {
       tickets,
       image,
       category,
-      talent
+      talent,
+      organizer: req.user.organizer
     },
     { new: true, runValidators: true }
   )
@@ -142,11 +153,34 @@ const updateEvents = async (req) => {
 const deleteEvents = async (req) => {
   const { id } = req.params
   const result = await Events.findOneAndDelete({
-    _id: id
+    _id: id,
+    organizer: req.user.organizer
   })
 
   if (!result) throw new NotFoundError(`Not found talents with id : ${id}`)
   return result
+}
+
+const changeStatusEvents = async (req) => {
+  const { id } = req.params
+  const { statusEvent } = req.body
+
+  if (!['Draft', 'Published'].includes(statusEvent)) {
+    throw new BadRequestError('Status must be Draft or Published')
+  }
+
+  const checkEvent = await Events.findOne({
+    _id: id,
+    organizer: req.user.organizer
+  })
+
+  if (!checkEvent) { throw new NotFoundError(`Tidak ada acara dengan id :  ${id}`) }
+
+  checkEvent.statusEvent = statusEvent
+
+  await checkEvent.save()
+
+  return checkEvent
 }
 
 module.exports = {
@@ -154,5 +188,6 @@ module.exports = {
   createEvents,
   getOneEvents,
   updateEvents,
-  deleteEvents
+  deleteEvents,
+  changeStatusEvents
 }

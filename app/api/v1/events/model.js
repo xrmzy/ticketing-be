@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 const ticketCategoriesSchema = new mongoose.Schema({
   type: {
     type: String,
-    required: [true, 'Please fill the type of tickets']
+    required: [true, 'Tipe tiket harus diisi']
   },
   price: {
     type: Number,
@@ -21,52 +21,65 @@ const ticketCategoriesSchema = new mongoose.Schema({
   expired: {
     type: Date
   }
-
 })
 
-const EventSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: [true, 'Please fill the title'],
-    minlenght: 3,
-    maxlenght: 50
+const EventSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, 'Please fill the title'],
+      minlength: 3,
+      maxlength: 50
+    },
+    date: {
+      type: Date,
+      required: [true, 'Please fill the date']
+    },
+    about: {
+      type: String
+    },
+    tagline: {
+      type: String,
+      required: [true, 'Please fill the tag line']
+    },
+    keyPoint: {
+      type: [String]
+    },
+    venueName: {
+      type: String,
+      required: [true, 'Please fill the vanue']
+    },
+    statusEvent: {
+      type: String,
+      enum: ['Draft', 'Published'],
+      default: 'Draft'
+    },
+    tickets: {
+      type: [ticketCategoriesSchema],
+      required: true
+    },
+    image: {
+      type: mongoose.Types.ObjectId,
+      ref: 'Image',
+      required: true
+    },
+    category: {
+      type: mongoose.Types.ObjectId,
+      ref: 'Category',
+      required: true
+    },
+    talent: {
+      type: mongoose.Types.ObjectId,
+      ref: 'Talent',
+      required: true
+    },
+    organizer: {
+      type: mongoose.Types.ObjectId,
+      ref: 'Organizer',
+      required: true
+    }
   },
-  date: {
-    type: Date,
-    required: [true, 'Please fill the date']
-  },
-  tagline: {
-    type: String,
-    required: [true, 'Please fill the tagline']
-  },
-  keyPoint: {
-    type: [String]
-  },
-  vanueName: {
-    type: String,
-    required: [true, 'Please fill the vanue events']
-  },
-  statusEvent: {
-    type: String,
-    enum: ['Draft', 'Published'],
-    default: 'Draft'
-  },
-  tickets: {
-    type: [ticketCategoriesSchema],
-    required: true
-  },
-  image: {
-    type: mongoose.Types.ObjectId,
-    ref: 'Image',
-    required: true
-  },
-  category: {
-    type: mongoose.Types.ObjectId,
-    ref: 'Talent',
-    required: true
-  }
-},
-{ timeStamps: true }
+  { timestamps: true }
 )
 
 module.exports = mongoose.model('Event', EventSchema)
